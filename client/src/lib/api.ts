@@ -8,11 +8,11 @@ const api = axios.create({
 });
 
 export async function sendTextMessage(message: string) {
-  const response = await api.post("/ask", {
-    message: message,
-  }, {
+  const formData = new FormData();
+   formData.append("text", message);
+  const response = await api.post("/ask", formData, {
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "multipart/form-data",
     },
   });
   return response.data;
