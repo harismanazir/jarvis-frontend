@@ -1,0 +1,182 @@
+Prompt 🟢
+
+Build a complete React frontend for my project called Jarvis – Personal AI Assistant with the following specifications:
+
+1. Framework & Styling
+
+Use React (latest) with Vite.
+
+Use Tailwind CSS for modern, responsive styling.
+
+Make the UI clean, minimal, and fast.
+
+Add a Dark/Light mode toggle in the navbar using Tailwind’s dark: class.
+
+2. Layout & Components
+
+The app should have a two-column layout with camera on the left and chat interface on the right.
+
+a) Navbar.jsx
+
+Fixed top navbar.
+
+Show the app title: “👧🏼 Jarvis – Your Personal AI Assistant”.
+
+Include a Dark/Light mode toggle switch on the right.
+
+Store the theme preference in localStorage.
+
+b) JarvisUI.jsx (Main Container)
+
+Two sections side by side using flexbox:
+
+Left Panel → Webcam Stream
+
+Right Panel → Chat Interface + Audio Recorder
+
+Responsive design: On mobile, webcam and chat stack vertically.
+
+c) WebcamStream.jsx
+
+Use react-webcam for live camera feed.
+
+Full-width camera panel with rounded borders.
+
+d) ChatBox.jsx
+
+Scrollable chat interface with two types of messages:
+
+User Messages → aligned right, blue background.
+
+Jarvis Messages → aligned left, green background.
+
+Auto-scroll to bottom on new messages.
+
+Include a “Clear Chat” button.
+
+e) AudioRecorder.jsx
+
+Allow users to record audio via microphone.
+
+Show Start and Stop recording buttons.
+
+After stopping, send the audio file to the backend.
+
+f) VoicePlayer.jsx
+
+Play AI-generated audio responses automatically.
+
+3. API Integration
+
+The FastAPI backend runs at http://localhost:8000.
+
+Endpoints
+
+POST /ask
+
+Request:
+
+Either audio (FormData) OR text string.
+
+Response:
+
+{
+  "user_input": "What is diabetes?",
+  "response": "Diabetes is ...",
+  "audio_url": "/get-audio/final.mp3"
+}
+
+
+GET /get-audio/{filename}
+
+Returns an MP3 file for playback.
+
+Frontend API Logic
+
+Use Axios for API calls.
+
+If audio is provided, send it via FormData.
+
+If text is provided, send it in the body.
+
+On success:
+
+Update chat history.
+
+Play AI-generated audio response.
+
+4. Features
+
+✅ Two-column layout → Camera + Chat side by side
+✅ Dark/Light mode toggle in navbar
+✅ Speech-to-Text → Record audio & transcribe
+✅ AI Agent Integration → Get response from backend
+✅ Text-to-Speech → Play AI voice automatically
+✅ Text-based Chat → Ask Jarvis via text
+✅ Live Webcam → Real-time preview
+✅ Responsive UI → Mobile-friendly
+✅ Persistent Chat History → Store in React state
+
+5. Styling & Theme
+Dependencies
+npm install axios react-webcam tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+Tailwind Setup
+
+In tailwind.config.js:
+
+export default {
+  darkMode: "class",
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  theme: { extend: {} },
+  plugins: [],
+};
+
+
+In src/index.css:
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+6. Bonus Features
+
+Loading Spinner → Show when Jarvis is thinking.
+
+Toast Notifications → Use react-toastify for error handling.
+
+Auto Scroll Chat → Always scroll to latest message.
+
+Keyboard Shortcut → Press Enter to send text message.
+
+Deliverables
+
+A complete React frontend inside a frontend folder.
+
+Properly structured components:
+
+src/
+  components/
+    Navbar.jsx
+    JarvisUI.jsx
+    WebcamStream.jsx
+    ChatBox.jsx
+    AudioRecorder.jsx
+    VoicePlayer.jsx
+
+
+Dark/Light mode fully functional.
+
+Ready to integrate with my FastAPI backend.
+
+End Goal:
+Build a modern React frontend where:
+
+The left panel shows a live webcam.
+
+The right panel has a chatbox + voice recording + voice playback.
+
+A dark/light mode toggle is present in the navbar.
+
+Fully integrates with the given FastAPI backend.
