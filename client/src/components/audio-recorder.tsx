@@ -12,6 +12,7 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [isPlayingRecorded, setIsPlayingRecorded] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -34,11 +35,10 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         
-        // Create URL for recorded audio playback
+        // Create URL for recorded audio playback and store blob
         const audioUrl = URL.createObjectURL(audioBlob);
         setRecordedAudio(audioUrl);
-        
-        await handleAudioSubmit(audioBlob);
+        setRecordedBlob(audioBlob);
         
         // Stop all tracks to release microphone
         stream.getTracks().forEach(track => track.stop());
@@ -64,11 +64,18 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
     }
   };
 
-  const handleAudioSubmit = async (audioBlob: Blob) => {
+  const handleSendAudio = async () => {
+    if (!recordedBlob) return;
+    
     setIsLoading(true);
     try {
-      const response = await sendAudioMessage(audioBlob);
+      const response = await sendAudioMessage(recordedBlob);
       onApiResponse(response);
+      
+      // Clear the recorded audio after sending
+      setRecordedAudio(null);
+      setRecordedBlob(null);
+      setIsPlayingRecorded(false);
     } catch (error) {
       console.error("API Error:", error);
       toast({
@@ -78,7 +85,6 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
       });
     } finally {
       setIsLoading(false);
-      setIsProcessing(false);
     }
   };
 
@@ -102,6 +108,15 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
     } else {
       playRecordedAudio();
     }
+  };
+
+  const startNewRecording = () => {
+    // Clear existing recording
+    setRecordedAudio(null);
+    setRecordedBlob(null);
+    setIsPlayingRecorded(false);
+    // Start new recording
+    startRecording();
   };
 
   return (
@@ -133,8 +148,8 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
 
         {/* Audio Controls */}
         <div className="flex items-center space-x-2">
-          {/* Start Recording Button */}
-          {!isRecording && !isProcessing && (
+          {/* Record Button */}
+          {!isRecording && !recordedAudio && (
             <Button
               onClick={startRecording}
               className="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-background"
@@ -144,6 +159,21 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
                 <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd"/>
               </svg>
               <span className="text-sm font-medium">Record</span>
+            </Button>
+          )}
+
+          {/* Record New Button */}
+          {recordedAudio && !isRecording && (
+            <Button
+              onClick={startNewRecording}
+              variant="outline"
+              className="flex items-center space-x-2 px-3 py-2 text-sm transition-colors"
+              data-testid="record-new"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd"/>
+              </svg>
+              <span className="text-sm font-medium">New</span>
             </Button>
           )}
 
@@ -161,11 +191,11 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
             </Button>
           )}
 
-          {/* Play Recorded Audio Button */}
-          {recordedAudio && !isRecording && !isProcessing && (
+          {/* Play Button */}
+          {recordedAudio && !isRecording && (
             <Button
               onClick={toggleRecordedPlayback}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-background"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-background"
               data-testid="play-recorded"
             >
               {isPlayingRecorded ? (
@@ -181,12 +211,23 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
             </Button>
           )}
 
-          {/* Processing Indicator */}
-          {isProcessing && (
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full"></div>
-              <span className="text-sm text-muted-foreground">Processing...</span>
-            </div>
+          {/* Send Button */}
+          {recordedAudio && !isRecording && (
+            <Button
+              onClick={handleSendAudio}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="send-audio"
+            >
+              {isLoading ? (
+                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+              )}
+              <span className="text-sm font-medium">Send</span>
+            </Button>
           )}
         </div>
       </div>
@@ -204,7 +245,7 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
             <div className={`w-1 h-5 rounded-full transition-colors ${isRecording ? 'bg-primary animate-pulse' : 'bg-primary/55'}`} style={{ animationDelay: '0.6s' }}></div>
             <div className={`w-1 h-3 rounded-full transition-colors ${isRecording ? 'bg-primary animate-pulse' : 'bg-primary/40'}`} style={{ animationDelay: '0.7s' }}></div>
             <span className="text-xs text-muted-foreground ml-3">
-              {isRecording ? 'Recording...' : isProcessing ? 'Processing...' : recordedAudio ? 'Recording saved' : 'Ready to record'}
+              {isRecording ? 'Recording...' : recordedAudio ? 'Recording ready - Play or Send' : 'Ready to record'}
             </span>
           </div>
         </div>
