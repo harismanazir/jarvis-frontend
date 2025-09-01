@@ -88,7 +88,7 @@ export function VoicePlayer({ audioResponse, setAudioResponse }: VoicePlayerProp
   };
 
   return (
-    <div className="mt-4 bg-card border border-border rounded-xl shadow-sm p-4" data-testid="voice-player">
+    <div className="mt-4 bg-card border border-border rounded-xl shadow-sm p-3" data-testid="voice-player">
       <audio ref={audioRef} />
       
       <div className="flex items-center justify-between">

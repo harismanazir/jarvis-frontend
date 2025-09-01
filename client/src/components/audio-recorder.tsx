@@ -11,8 +11,11 @@ interface AudioRecorderProps {
 export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
+  const [isPlayingRecorded, setIsPlayingRecorded] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordedAudioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
   const startRecording = async () => {
@@ -30,6 +33,11 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        
+        // Create URL for recorded audio playback
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setRecordedAudio(audioUrl);
+        
         await handleAudioSubmit(audioBlob);
         
         // Stop all tracks to release microphone
@@ -74,8 +82,37 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
     }
   };
 
+  const playRecordedAudio = () => {
+    if (recordedAudioRef.current && recordedAudio) {
+      recordedAudioRef.current.play();
+      setIsPlayingRecorded(true);
+    }
+  };
+
+  const pauseRecordedAudio = () => {
+    if (recordedAudioRef.current) {
+      recordedAudioRef.current.pause();
+      setIsPlayingRecorded(false);
+    }
+  };
+
+  const toggleRecordedPlayback = () => {
+    if (isPlayingRecorded) {
+      pauseRecordedAudio();
+    } else {
+      playRecordedAudio();
+    }
+  };
+
   return (
-    <div className="mt-4 bg-card border border-border rounded-xl shadow-sm p-4">
+    <div className="mt-4 bg-card border border-border rounded-xl shadow-sm p-3">
+      {recordedAudio && (
+        <audio 
+          ref={recordedAudioRef}
+          src={recordedAudio}
+          onEnded={() => setIsPlayingRecorded(false)}
+        />
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
@@ -124,6 +161,26 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
             </Button>
           )}
 
+          {/* Play Recorded Audio Button */}
+          {recordedAudio && !isRecording && !isProcessing && (
+            <Button
+              onClick={toggleRecordedPlayback}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-background"
+              data-testid="play-recorded"
+            >
+              {isPlayingRecorded ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"/>
+                </svg>
+              )}
+              <span className="text-sm font-medium">{isPlayingRecorded ? 'Pause' : 'Play'}</span>
+            </Button>
+          )}
+
           {/* Processing Indicator */}
           {isProcessing && (
             <div className="flex items-center space-x-2">
@@ -135,8 +192,8 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
       </div>
 
       {/* Audio Visualization */}
-      <div className="px-4 pb-4 pt-2">
-        <div className="h-12 bg-muted/50 rounded-lg flex items-center justify-center">
+      <div className="px-3 pb-3 pt-2">
+        <div className="h-8 bg-muted/50 rounded-lg flex items-center justify-center">
           <div className="flex items-end space-x-1">
             <div className={`w-1 h-2 rounded-full transition-colors ${isRecording ? 'bg-primary animate-pulse' : 'bg-primary/30'}`}></div>
             <div className={`w-1 h-4 rounded-full transition-colors ${isRecording ? 'bg-primary animate-pulse' : 'bg-primary/50'}`} style={{ animationDelay: '0.1s' }}></div>
@@ -147,7 +204,7 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
             <div className={`w-1 h-5 rounded-full transition-colors ${isRecording ? 'bg-primary animate-pulse' : 'bg-primary/55'}`} style={{ animationDelay: '0.6s' }}></div>
             <div className={`w-1 h-3 rounded-full transition-colors ${isRecording ? 'bg-primary animate-pulse' : 'bg-primary/40'}`} style={{ animationDelay: '0.7s' }}></div>
             <span className="text-xs text-muted-foreground ml-3">
-              {isRecording ? 'Recording...' : isProcessing ? 'Processing...' : 'Ready to record'}
+              {isRecording ? 'Recording...' : isProcessing ? 'Processing...' : recordedAudio ? 'Recording saved' : 'Ready to record'}
             </span>
           </div>
         </div>
