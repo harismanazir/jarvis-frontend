@@ -14,6 +14,7 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
   const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [isPlayingRecorded, setIsPlayingRecorded] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordedAudioRef = useRef<HTMLAudioElement>(null);
@@ -67,6 +68,7 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
   const handleSendAudio = async () => {
     if (!recordedBlob) return;
     
+    setIsSending(true);
     setIsLoading(true);
     try {
       const response = await sendAudioMessage(recordedBlob);
@@ -84,6 +86,7 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
         variant: "destructive",
       });
     } finally {
+      setIsSending(false);
       setIsLoading(false);
     }
   };
@@ -215,11 +218,11 @@ export function AudioRecorder({ onApiResponse, setIsLoading }: AudioRecorderProp
           {recordedAudio && !isRecording && (
             <Button
               onClick={handleSendAudio}
-              disabled={isLoading}
+              disabled={isSending}
               className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="send-audio"
             >
-              {isLoading ? (
+              {isSending ? (
                 <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
               ) : (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
